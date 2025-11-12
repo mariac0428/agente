@@ -1,37 +1,14 @@
-# Instalar librerías necesarias
+# Instalar librerías necesarias (solo la primera vez)
 if (!require(httr)) install.packages("httr", dependencies = TRUE)
 if (!require(jsonlite)) install.packages("jsonlite", dependencies = TRUE)
-if (!require(openssl)) install.packages("openssl", dependencies = TRUE)
 
 library(httr)
 library(jsonlite)
-library(openssl)
 
-# --- Ruta donde se guardará la clave encriptada ---
-key_file <- "gemini_key.enc"
+# --- Pedir la API key cada sesión ---
+api_key <- readline("Ingresa tu API key de Gemini: ")
 
-# --- Función auxiliar: genera clave AES válida (32 bytes) ---
-get_encryption_key <- function() {
-  user <- Sys.info()[["user"]]
-  user_raw <- charToRaw(user)
-  # Asegura longitud válida (rellena o corta a 32 bytes)
-  length(user_raw) <- 32
-  user_raw[is.na(user_raw)] <- as.raw(0)
-  return(user_raw)
-}
-
-# --- Cargar o pedir la API key ---
-if (file.exists(key_file)) {
-  encrypted_key <- readBin(key_file, what = "raw", n = file.info(key_file)$size)
-  api_key <- rawToChar(aes_cbc_decrypt(encrypted_key, get_encryption_key()))
-} else {
-  api_key <- readline("Ingresa tu API key de Gemini: ")
-  encrypted_key <- aes_cbc_encrypt(charToRaw(api_key), get_encryption_key())
-  writeBin(encrypted_key, key_file)
-  cat("Clave guardada de forma segura.\n")
-}
-
-# --- Función que consulta Gemini ---
+# --- Función que consulta la API de Gemini ---
 consultar_gemini <- function(prompt, api_key) {
   url <- paste0(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=",
@@ -62,7 +39,7 @@ consultar_gemini <- function(prompt, api_key) {
   cat("\nGemini:\n", text, "\n")
 }
 
-# --- CHAT INTERACTIVO ---
+# --- Chat interactivo ---
 cat("=== Chat con Gemini (escribe 'salir' para terminar) ===\n")
 repeat {
   prompt <- readline("\nTú: ")
@@ -72,3 +49,4 @@ repeat {
   }
   consultar_gemini(prompt, api_key)
 }
+
