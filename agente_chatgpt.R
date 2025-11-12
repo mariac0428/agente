@@ -1,5 +1,5 @@
 # =====================================
-# 🤖 Agente ChatGPT en R (con clave pedida al momento)
+# Agente ChatGPT interactivo en R (versión limpia)
 # =====================================
 
 # Instalar paquetes si no existen
@@ -11,46 +11,69 @@ suppressWarnings({
   library(jsonlite)
 })
 
-# Función para chatear con GPT
-chat_with_gpt <- function(prompt) {
-  # 🔑 Pedir la API key al usuario
-  api_key <- readline(prompt = "🔑 Ingresa tu API key de OpenAI: ")
+# =====================================
+# Función principal
+# =====================================
 
-  if (nchar(api_key) == 0) {
-    stop("❌ No se ingresó ninguna API key. Intenta de nuevo.")
+chat_session <- function() {
+  cat("=====================================\n")
+  cat("Agente ChatGPT en R\n")
+  cat("=====================================\n")
+  cat("Escribe 'salir' para terminar la sesión.\n\n")
+
+  # Pedir API key
+  api_key <- readline(prompt = "Ingresa tu API key de OpenAI: ")
+  if (nchar(api_key) == 0) stop("No se ingresó ninguna API key. Intenta de nuevo.")
+
+  # Guardar el contexto de la conversación
+  mensajes <- list(list(role = "system", content = "Eres un asistente útil y claro."))
+
+  repeat {
+    # Entrada del usuario
+    user_input <- readline("\nTú: ")
+
+    if (tolower(user_input) %in% c("salir", "exit", "quit")) {
+      cat("\nSesión terminada.\n")
+      break
+    }
+
+    # Agregar el mensaje del usuario al contexto
+    mensajes <- append(mensajes, list(list(role = "user", content = user_input)))
+
+    # Llamada a la API
+    res <- httr::POST(
+      url = "https://api.openai.com/v1/chat/completions",
+      httr::add_headers(
+        Authorization = paste("Bearer", api_key),
+        "Content-Type" = "application/json"
+      ),
+      body = jsonlite::toJSON(list(
+        model = "gpt-4o-mini",
+        messages = mensajes
+      ), auto_unbox = TRUE)
+    )
+
+    if (res$status_code != 200) {
+      cat("Error en la llamada a la API:\n")
+      print(content(res, as = "text"))
+      break
+    }
+
+    # Respuesta
+    respuesta <- content(res)$choices[[1]]$message$content
+    cat("\nChatGPT:\n", respuesta, "\n")
+
+    # Agregar respuesta al contexto
+    mensajes <- append(mensajes, list(list(role = "assistant", content = respuesta)))
   }
-
-  url <- "https://api.openai.com/v1/chat/completions"
-
-  body <- list(
-    model = "gpt-4o-mini",
-    messages = list(list(role = "user", content = prompt))
-  )
-
-  res <- httr::POST(
-    url,
-    httr::add_headers(
-      Authorization = paste("Bearer", api_key),
-      "Content-Type" = "application/json"
-    ),
-    body = jsonlite::toJSON(body, auto_unbox = TRUE)
-  )
-
-  if (res$status_code != 200) {
-    print(content(res, as = "text"))
-    stop("⚠️ Error al llamar a la API.")
-  }
-
-  return(content(res)$choices[[1]]$message$content)
 }
 
 # =====================================
-# 🚀 Parte interactiva
+# Iniciar la sesión de chat
 # =====================================
 
-cat("=====================================\n")
-cat("🤖 Bienvenido al agente ChatGPT en R\n")
-cat("=====================================\n\n")
+chat_session()
+
 
 prompt <- readline("💬 Escribe tu pregunta para ChatGPT: ")
 cat("\n🧠 Respuesta de ChatGPT:\n")
