@@ -14,6 +14,7 @@ key_file <- "gemini_key.enc"
 get_encryption_key <- function() {
   user <- Sys.info()[["user"]]
   user_raw <- charToRaw(user)
+  # Asegura longitud válida (rellena o corta a 32 bytes)
   length(user_raw) <- 32
   user_raw[is.na(user_raw)] <- as.raw(0)
   return(user_raw)
