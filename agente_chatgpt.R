@@ -1,58 +1,57 @@
-# ===============================
-# AGENTE CHATGPT EN R (portátil)
-# ===============================
+# =====================================
+# 🤖 Agente ChatGPT en R (con clave pedida al momento)
+# =====================================
 
-# Librerías necesarias
-if(!require(httr)) install.packages("httr", repos='https://cloud.r-project.org')
-if(!require(jsonlite)) install.packages("jsonlite", repos='https://cloud.r-project.org')
+# Instalar paquetes si no existen
+if (!require(httr)) install.packages("httr", repos = "https://cloud.r-project.org")
+if (!require(jsonlite)) install.packages("jsonlite", repos = "https://cloud.r-project.org")
 
-library(httr)
-library(jsonlite)
+suppressWarnings({
+  library(httr)
+  library(jsonlite)
+})
 
-# ---- FUNCIONES ----
+# Función para chatear con GPT
+chat_with_gpt <- function(prompt) {
+  # 🔑 Pedir la API key al usuario
+  api_key <- readline(prompt = "🔑 Ingresa tu API key de OpenAI: ")
 
-# Cargar clave desde variable de entorno o pedirla al usuario
-obtener_api_key <- function() {
-  key <- Sys.getenv("OPENAI_API_KEY")
-  if (key == "") {
-    key <- readline("Introduce tu clave API de OpenAI: ")
-    Sys.setenv(OPENAI_API_KEY = key)
+  if (nchar(api_key) == 0) {
+    stop("❌ No se ingresó ninguna API key. Intenta de nuevo.")
   }
-  return(key)
-}
 
-# Función principal que llama al modelo
-llamar_chatgpt <- function(prompt) {
-  api_key <- obtener_api_key()
   url <- "https://api.openai.com/v1/chat/completions"
 
   body <- list(
-    model = "gpt-5",  # usa "gpt-4o" si no tienes acceso a 5
+    model = "gpt-4o-mini",
     messages = list(list(role = "user", content = prompt))
   )
 
-  response <- POST(
+  res <- httr::POST(
     url,
-    add_headers(
+    httr::add_headers(
       Authorization = paste("Bearer", api_key),
-      `Content-Type` = "application/json"
+      "Content-Type" = "application/json"
     ),
-    body = toJSON(body, auto_unbox = TRUE)
+    body = jsonlite::toJSON(body, auto_unbox = TRUE)
   )
 
-  result <- content(response, "parsed")
-  
-  if (!is.null(result$error)) {
-    cat("❌ Error:", result$error$message, "\n")
-  } else {
-    cat("\n🧠 Respuesta:\n")
-    cat(result$choices[[1]]$message$content, "\n")
+  if (res$status_code != 200) {
+    print(content(res, as = "text"))
+    stop("⚠️ Error al llamar a la API.")
   }
+
+  return(content(res)$choices[[1]]$message$content)
 }
 
-# ---- USO ----
-# Si se llama directamente:
-if (sys.nframe() == 0) {
-  prompt_usuario <- readline("Escribe tu prompt: ")
-  llamar_chatgpt(prompt_usuario)
-}
+# =====================================
+# 🚀 Parte interactiva
+# =====================================
+
+cat("=====================================\n")
+cat("🤖 Bienvenido al agente ChatGPT en R\n")
+cat("=====================================\n\n")
+
+prompt <- readline("💬 Escribe tu pregunta para ChatGPT: ")
+cat("\n🧠 Respuesta de ChatGPT:\n")
+cat(chat_with_gpt(prompt), "\n")
