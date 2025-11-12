@@ -1,3 +1,4 @@
+# Instalar librerías necesarias
 if (!require(httr)) install.packages("httr", dependencies = TRUE)
 if (!require(jsonlite)) install.packages("jsonlite", dependencies = TRUE)
 if (!require(openssl)) install.packages("openssl", dependencies = TRUE)
@@ -6,21 +7,30 @@ library(httr)
 library(jsonlite)
 library(openssl)
 
-# --- Archivo donde se guardará la clave encriptada ---
+# --- Ruta donde se guardará la clave encriptada ---
 key_file <- "gemini_key.enc"
 
-# --- Pedir o leer la API key ---
+# --- Función auxiliar: genera clave AES válida (32 bytes) ---
+get_encryption_key <- function() {
+  user <- Sys.info()[["user"]]
+  user_raw <- charToRaw(user)
+  length(user_raw) <- 32
+  user_raw[is.na(user_raw)] <- as.raw(0)
+  return(user_raw)
+}
+
+# --- Cargar o pedir la API key ---
 if (file.exists(key_file)) {
   encrypted_key <- readBin(key_file, what = "raw", n = file.info(key_file)$size)
-  api_key <- rawToChar(aes_cbc_decrypt(encrypted_key, charToRaw(Sys.info()[["user"]])))
+  api_key <- rawToChar(aes_cbc_decrypt(encrypted_key, get_encryption_key()))
 } else {
   api_key <- readline("Ingresa tu API key de Gemini: ")
-  encrypted_key <- aes_cbc_encrypt(charToRaw(api_key), charToRaw(Sys.info()[["user"]]))
+  encrypted_key <- aes_cbc_encrypt(charToRaw(api_key), get_encryption_key())
   writeBin(encrypted_key, key_file)
   cat("Clave guardada de forma segura.\n")
 }
 
-# --- Función para consultar a Gemini ---
+# --- Función que consulta Gemini ---
 consultar_gemini <- function(prompt, api_key) {
   url <- paste0(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=",
@@ -48,9 +58,16 @@ consultar_gemini <- function(prompt, api_key) {
   
   result <- content(response, "parsed")
   text <- result$candidates[[1]]$content$parts[[1]]$text
-  cat("\nRespuesta de Gemini:\n", text, "\n")
+  cat("\nGemini:\n", text, "\n")
 }
 
-# --- Ejemplo de uso ---
-prompt <- readline("Escribe tu pregunta o prompt: ")
-consultar_gemini(prompt, api_key)
+# --- CHAT INTERACTIVO ---
+cat("=== Chat con Gemini (escribe 'salir' para terminar) ===\n")
+repeat {
+  prompt <- readline("\nTú: ")
+  if (tolower(prompt) %in% c("salir", "exit", "quit")) {
+    cat("\nChat finalizado.\n")
+    break
+  }
+  consultar_gemini(prompt, api_key)
+}
