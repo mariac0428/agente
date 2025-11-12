@@ -49,4 +49,3 @@ repeat {
   }
   consultar_gemini(prompt, api_key)
 }
-
