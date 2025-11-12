@@ -10,9 +10,9 @@ api_key <- readline("Ingresa tu API key de Gemini: ")
 
 # --- Función que consulta la API de Gemini Pro ---
 consultar_gemini <- function(prompt, api_key) {
-  # Cambiamos el modelo a gemini-2.0-pro
+  # Usar la versión estable v1 y el modelo gemini-2.0-pro
   url <- paste0(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key=",
+    "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-pro:generateContent?key=",
     api_key
   )
   
@@ -41,7 +41,7 @@ consultar_gemini <- function(prompt, api_key) {
 }
 
 # --- Chat interactivo ---
-cat("=== Chat con Gemini (modelo: gemini-2.0-pro) ===\n")
+cat("=== Chat con Gemini (modelo: gemini-2.0-pro, API v1) ===\n")
 cat("Escribe 'salir' para terminar.\n")
 
 repeat {
@@ -52,4 +52,3 @@ repeat {
   }
   consultar_gemini(prompt, api_key)
 }
-
