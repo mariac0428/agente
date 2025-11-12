@@ -73,8 +73,3 @@ chat_session <- function() {
 # =====================================
 
 chat_session()
-
-
-prompt <- readline("💬 Escribe tu pregunta para ChatGPT: ")
-cat("\n🧠 Respuesta de ChatGPT:\n")
-cat(chat_with_gpt(prompt), "\n")
